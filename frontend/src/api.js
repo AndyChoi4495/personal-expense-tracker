@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8000', // Gateway 포트
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
 });
 
 // 토큰 자동 포함 인터셉터
