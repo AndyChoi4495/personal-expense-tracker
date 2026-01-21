@@ -1,0 +1,25 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Transaction {
+  id       Int      @id @default(autoincrement())
+  userId   Int // User Service의 사용자 ID와 매칭
+  amount   Decimal // 금액 (소수점 처리를 위해 Decimal 사용)
+  currency String   @default("CAD")
+  category String // 예: 식비, 교통비, 월급
+  type     String // "INCOME" (수입) 또는 "EXPENSE" (지출)
+  date     DateTime @default(now())
+  note     String?
+}
