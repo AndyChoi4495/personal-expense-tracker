@@ -9,7 +9,13 @@ const app = express();
 const PORT = 8002;
 
 const cors = require('cors');
-app.use(cors());
+app.use(
+  cors({
+    origin: '*', // gateway , front -end 만 허용으로 바꿔야됨
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
+);
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
