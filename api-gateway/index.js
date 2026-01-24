@@ -21,20 +21,20 @@ app.use(
 app.use(
   '/users',
   proxy(USER_SERVICE_URL, {
+    // 1. 경로 재작성: /users/signup -> /signup
     proxyReqPathResolver: (req) => {
-      return req.url; // /users/signup -> /signup
+      const parts = req.url.split('?');
+      const path = parts[0];
+      const query = parts[1] ? `?${parts[1]}` : '';
+      return path + query;
     },
-    // 아래 설정을 추가하여 프록시 과정에서 주소가 바뀌는 것을 방지합니다.
-    proxyReqOptDecorator: (proxyReqOpts, srcReq) => {
-      proxyReqOpts.headers['Content-Type'] = 'application/json';
+    // 2. 리다이렉트 방지: 프록시가 내부적으로 처리하도록 강제
+    parseReqBody: true,
+    preserveHostHdr: false, // Vercel 환경에서는 false가 안정적입니다.
+    proxyReqOptDecorator: (proxyReqOpts) => {
+      // Vercel이 리다이렉트를 시키지 않도록 헤더를 고정합니다.
+      proxyReqOpts.headers['Connection'] = 'keep-alive';
       return proxyReqOpts;
-    },
-    userResHeaderDecorator(headers, userReq, userRes, proxyReq, proxyRes) {
-      headers['access-control-allow-origin'] =
-        'https://personal-expense-tracker-front-end.vercel.app';
-      headers['access-control-allow-methods'] = 'GET,POST,PUT,DELETE,OPTIONS';
-      headers['access-control-allow-headers'] = 'Content-Type,Authorization';
-      return headers;
     },
   })
 );
