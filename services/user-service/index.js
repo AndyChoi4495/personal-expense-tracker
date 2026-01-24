@@ -15,8 +15,9 @@ app.use(express.json());
 
 app.use(
   cors({
-    origin: '*', // gateway , front -end 만 허용으로 바꿔야됨
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    origin: true, // 요청을 보낸 Origin을 그대로 허용 (리다이렉트 대응)
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
