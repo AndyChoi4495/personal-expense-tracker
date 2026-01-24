@@ -11,15 +11,29 @@ const USER_SERVICE_URL = process.env.USER_SERVICE_URL || 'http://localhost:8001'
 const TRANS_SERVICE_URL = process.env.TRANS_SERVICE_URL || 'http://localhost:8002';
 
 // 유저 관련 요청 프록시
-app.use('/users', proxy(USER_SERVICE_URL));
+app.use(
+  '/users',
+  proxy(USER_SERVICE_URL, {
+    proxyReqPathResolver: (req) => {
+      return req.url;
+    },
+  })
+);
 
 // 지출 관련 요청 프록시
-app.use('/transactions', proxy(TRANS_SERVICE_URL));
+app.use(
+  '/transactions',
+  proxy(TRANS_SERVICE_URL, {
+    proxyReqPathResolver: (req) => {
+      return req.url;
+    },
+  })
+);
 
 app.get('/', (req, res) => {
-    res.send('API Gateway가 작동 중입니다.');
+  res.send('API Gateway가 작동 중입니다.');
 });
 
 app.listen(PORT, () => {
-    console.log(`[Gateway] running on port ${PORT}`);
+  console.log(`[Gateway] running on port ${PORT}`);
 });
