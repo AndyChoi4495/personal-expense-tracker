@@ -9,6 +9,7 @@ const cors = require('cors');
 const USER_SERVICE_URL = process.env.USER_SERVICE_URL || 'http://localhost:8001';
 const TRANS_SERVICE_URL = process.env.TRANS_SERVICE_URL || 'http://localhost:8002';
 
+app.options('*', cors());
 app.use(
   cors({
     origin: 'https://personal-expense-tracker-front-end.vercel.app',
