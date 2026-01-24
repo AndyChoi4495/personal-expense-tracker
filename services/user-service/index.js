@@ -28,30 +28,27 @@ app.get('/', (req, res) => {
   res.json({ message: 'Personal Financial Dashboard - User Service 작동 중' });
 });
 
-// [GET] 프로필 조회: DB에서 특정 유저 찾기
-app.get('/profile/:id', async (req, res) => {
-  const { id } = req.params;
-  try {
-    const user = await prisma.user.findUnique({
-      where: { id: parseInt(id) },
-    });
-    if (user) {
-      res.json(user);
-    } else {
-      res.status(404).json({ message: 'Cannot find the user' });
-    }
-  } catch (error) {
-    res.status(500).json({ error: 'Server Error' });
-  }
-});
-
 // [POST] 회원가입: 실제 DB에 사용자 저장
 app.post('/signup', async (req, res) => {
-  const { email, password, name } = req.body;
-  try {
-    // 비밀번호 해싱 (보안 강화)
-    const hashedPassword = await bcrypt.hash(password, 10);
+  const { email, password } = req.body;
 
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password are required.' });
+  }
+
+  try {
+    // 1. 이미 존재하는 이메일인지 먼저 확인
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      // 중복된 이메일이 있을 경우 409 (Conflict) 상태 코드를 보냅니다.
+      return res.status(409).json({ error: 'This email is already registered.' });
+    }
+
+    // 2. 비밀번호 해싱 및 유저 생성
+    const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = await prisma.user.create({
       data: {
         email,
@@ -59,10 +56,11 @@ app.post('/signup', async (req, res) => {
         name: email.split('@')[0],
       },
     });
+
     res.status(201).json({ message: 'Sign up Successful', userId: newUser.id });
   } catch (error) {
-    console.error('Error message:', error);
-    res.status(400).json({ error: 'Fail to Sign up', detail: error.message });
+    console.error('Signup error:', error);
+    res.status(500).json({ error: 'Internal Server Error', detail: error.message });
   }
 });
 

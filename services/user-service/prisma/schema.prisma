@@ -1,12 +1,9 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client-js"
-  output   = "../src/generated/client"
+  provider        = "prisma-client-js"
+  // Mac M1 및 배포 환경 호환성을 유지.
+  binaryTargets   = ["native", "darwin-arm64", "debian-openssl-1.1.x"]
+  // Prisma 7에서 어댑터 사용을 위해 활성화해야 합니다.
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
@@ -20,4 +17,3 @@ model User {
   name      String
   createdAt DateTime @default(now())
 }
-
