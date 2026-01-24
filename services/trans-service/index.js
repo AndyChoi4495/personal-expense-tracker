@@ -9,6 +9,7 @@ const app = express();
 const PORT = 8002;
 
 const cors = require('cors');
+app.options('*', cors());
 app.use(
   cors({
     origin: '*', // gateway , front -end 만 허용으로 바꿔야됨
