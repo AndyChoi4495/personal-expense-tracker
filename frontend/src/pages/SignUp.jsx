@@ -20,7 +20,7 @@ const SignUp = () => {
       alert('Registration Successful! Please log in.');
       navigate('/login');
     } catch (err) {
-      alert('Sign Up Failed: ' + (err.response?.data?.error || 'Server Error'));
+      alert('Sign Up Failed: ' + (err || 'Server Error'));
     } finally {
       setLoading(false);
     }
