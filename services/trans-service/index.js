@@ -9,7 +9,9 @@ const app = express();
 const PORT = 8002;
 
 const cors = require('cors');
-app.options('(.*)', cors());
+app.use(cors());
+app.use(express.json());
+
 app.use(
   cors({
     origin: '*', // gateway , front -end 만 허용으로 바꿔야됨
@@ -28,8 +30,6 @@ const { Decimal } = require('decimal.js');
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
-
-app.use(express.json());
 
 // [미들웨어] 토큰 확인 함수
 const authenticateToken = (req, res, next) => {

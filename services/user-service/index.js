@@ -10,7 +10,9 @@ const app = express();
 const PORT = 8001;
 
 const cors = require('cors');
-app.options('(.*)', cors());
+app.use(cors());
+app.use(express.json());
+
 app.use(
   cors({
     origin: '*', // gateway , front -end 만 허용으로 바꿔야됨
@@ -27,8 +29,6 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = process.env.JWT_SECRET;
-
-app.use(express.json());
 
 // [GET] base route
 app.get('/', (req, res) => {
