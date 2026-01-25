@@ -22,12 +22,12 @@ app.use(
   })
 );
 
-app.use((req, res, next) => {
+/* app.use((req, res, next) => {
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
   next();
-});
+}); */
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
