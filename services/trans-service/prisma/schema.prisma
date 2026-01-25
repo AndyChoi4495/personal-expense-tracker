@@ -1,13 +1,21 @@
 generator client {
-  provider      = "prisma-client-js"
-  // M1 Mac 호환성을 위해 유지합니다.
-  binaryTargets = ["native", "darwin-arm64", "debian-openssl-1.1.x"]
+  provider        = "prisma-client-js"
+  // Mac M1 및 배포 환경 호환성을 유지.
+  binaryTargets   = ["native", "darwin-arm64", "debian-openssl-1.1.x"]
+  // Prisma 7에서 어댑터 사용을 위해 활성화해야 합니다.
   previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
   provider = "postgresql"
+}
 
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
 }
 
 model Transaction {

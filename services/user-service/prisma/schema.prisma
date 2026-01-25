@@ -17,3 +17,14 @@ model User {
   name      String
   createdAt DateTime @default(now())
 }
+
+model Transaction {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  amount    Decimal
+  currency  String   @default("CAD")
+  category  String
+  type      String
+  date      DateTime @default(now())
+  note      String?
+}
