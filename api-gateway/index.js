@@ -37,8 +37,15 @@ app.use(
   '/transactions',
   proxy(TRANS_SERVICE_URL, {
     proxyReqPathResolver: (req) => {
-      return req.url.startsWith('/') ? req.url : `/${req.url}`;
+      const resolvedPath = req.url.startsWith('/') ? req.url : `/${req.url}`;
+
+      console.log(
+        `[Forwarding] ${req.method} to: ${USER_SERVICE_URL}${resolvedPath}`
+      );
+      return resolvedPath;
     },
+    parseReqBody: true,
+    preserveHostHdr: false,
   })
 );
 
