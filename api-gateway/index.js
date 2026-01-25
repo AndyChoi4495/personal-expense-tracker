@@ -21,13 +21,15 @@ app.use(
   '/users',
   proxy(USER_SERVICE_URL, {
     proxyReqPathResolver: (req) => {
-      // req.url에 이미 '/signup'이 들어 있음
-      const path = req.url.startsWith('/') ? req.url : `/${req.url}`;
-      console.log(`[Proxying] /users${req.url} -> ${USER_SERVICE_URL}${path}`);
-      return path;
+      const resolvedPath = req.url.startsWith('/') ? req.url : `/${req.url}`;
+
+      console.log(
+        `[Forwarding] ${req.method} to: ${USER_SERVICE_URL}${resolvedPath}`
+      );
+      return resolvedPath;
     },
-    preserveHostHdr: false,
     parseReqBody: true,
+    preserveHostHdr: false,
   })
 );
 
