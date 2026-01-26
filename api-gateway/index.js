@@ -37,9 +37,10 @@ app.use(
   '/transactions',
   proxy(TRANS_SERVICE_URL, {
     proxyReqPathResolver: (req) => {
-      const path = req.url.startsWith('/') ? req.url : `/${req.url}`;
-      console.log(`[Proxy] Trans-Service로 전달: ${TRANS_SERVICE_URL}${path}`);
-      return path;
+      const resolvedPath = req.url.startsWith('/') ? req.url : `/${req.url}`;
+
+      console.log(`[Gateway] 전달 중: ${TRANS_SERVICE_URL}${resolvedPath}`);
+      return resolvedPath;
     },
   })
 );
