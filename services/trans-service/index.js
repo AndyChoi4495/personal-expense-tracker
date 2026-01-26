@@ -14,8 +14,9 @@ app.use(express.json());
 
 app.use(
   cors({
-    origin: '*', // gateway , front -end 만 허용으로 바꿔야됨
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    origin: 'https://personal-expense-tracker-front-end.vercel.app',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
