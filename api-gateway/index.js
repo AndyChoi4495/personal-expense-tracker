@@ -37,12 +37,9 @@ app.use(
   '/transactions',
   proxy(TRANS_SERVICE_URL, {
     proxyReqPathResolver: (req) => {
-      const parts = req.url.split('?');
-      const path = parts[0];
-      const query = parts[1] ? `?${parts[1]}` : '';
-
-      const resolvedPath = path.startsWith('/') ? path : `/${path}`;
-      return resolvedPath + query;
+      const path = req.url.startsWith('/') ? req.url : `/${req.url}`;
+      console.log(`[Proxy] Trans-Service로 전달: ${TRANS_SERVICE_URL}${path}`);
+      return path;
     },
   })
 );
