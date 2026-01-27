@@ -14,6 +14,7 @@ app.use(express.json());
 
 const allowedOrigins = [
   'https://personal-expense-tracker-front-end.vercel.app', // Production
+  'https://personal-expense-tracker-kappa-six.vercel.app'.
   'http://localhost:5173', // Local Vite Dev Server
   'http://localhost:3000', // Alternative Local Port
 ];
