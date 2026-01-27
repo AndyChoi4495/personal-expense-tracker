@@ -14,6 +14,10 @@ const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
 app.use(cors());
 app.use(express.json());
+// Base route
+app.get('/', (req, res) => {
+  res.json({ message: 'Personal Financial Dashboard - AI Service running' });
+});
 
 app.post('/chat', async (req, res) => {
   const { message } = req.body;
