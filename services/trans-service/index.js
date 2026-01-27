@@ -12,9 +12,24 @@ const cors = require('cors');
 app.use(cors());
 app.use(express.json());
 
+const allowedOrigins = [
+  'https://personal-expense-tracker-front-end.vercel.app', // Production
+  'http://localhost:5173', // Local Vite Dev Server
+  'http://localhost:3000', // Alternative Local Port
+];
+
 app.use(
   cors({
-    origin: 'https://personal-expense-tracker-front-end.vercel.app',
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or Postman)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS policy'));
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -121,31 +136,39 @@ app.get('/stats/summary', authenticateToken, async (req, res) => {
   }
 });
 
-// [GET] 지난달 vs 이번 달 소비 비교
-app.get('/stats/comparison', authenticateToken, async (req, res) => {
+// [GET] 카테고리별 전월 대비 비교
+app.get('/stats/category-comparison', authenticateToken, async (req, res) => {
   const userId = req.user.userId;
+  const { month, year } = req.query;
+
   const now = new Date();
+  const targetMonth = month ? parseInt(month) - 1 : now.getMonth();
+  const targetYear = year ? parseInt(year) : now.getFullYear();
 
-  // 1. 날짜 범위 설정
-  // 이번 달: 1일 ~ 현재
-  const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  // 1. 기준 달(Target Month) 범위 계산
+  const startOfThisMonth = new Date(targetYear, targetMonth, 1);
+  const endOfThisMonth = new Date(targetYear, targetMonth + 1, 0, 23, 59, 59);
 
-  // 지난달: 지난달 1일 ~ 지난달 말일
-  const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+  // 2. 이전 달(Previous Month) 범위 계산
+  // (Date 객체가 자동으로 연도 바뀜을 처리해줌: 1월에서 -1하면 전년도 12월이 됨)
+  const startOfLastMonth = new Date(targetYear, targetMonth - 1, 1);
+  const endOfLastMonth = new Date(targetYear, targetMonth, 0, 23, 59, 59);
 
   try {
-    // 2. 이번 달과 지난달의 지출 합계 각각 구하기 (Prisma의 _sum 기능 활용)
-    const thisMonthSum = await prisma.transaction.aggregate({
+    // 이번 달(선택된 달) 카테고리별 합계
+    const thisMonthStats = await prisma.transaction.groupBy({
+      by: ['category'],
       _sum: { amount: true },
       where: {
         userId,
         type: 'EXPENSE',
-        date: { gte: startOfThisMonth, lte: now },
+        date: { gte: startOfThisMonth, lte: endOfThisMonth },
       },
     });
 
-    const lastMonthSum = await prisma.transaction.aggregate({
+    // 지난달(선택된 달의 이전 달) 카테고리별 합계
+    const lastMonthStats = await prisma.transaction.groupBy({
+      by: ['category'],
       _sum: { amount: true },
       where: {
         userId,
@@ -154,30 +177,24 @@ app.get('/stats/comparison', authenticateToken, async (req, res) => {
       },
     });
 
-    const thisTotal = parseFloat(thisMonthSum._sum.amount || 0);
-    const lastTotal = parseFloat(lastMonthSum._sum.amount || 0);
+    const categories = [
+      ...new Set([...thisMonthStats, ...lastMonthStats].map((s) => s.category)),
+    ];
 
-    // 3. 차액 및 증감률 계산
-    const difference = thisTotal - lastTotal;
-    let percentageDiff = 0;
-    if (lastTotal > 0) {
-      percentageDiff = ((difference / lastTotal) * 100).toFixed(1);
-    }
+    const comparisonData = categories.map((cat) => ({
+      category: cat,
+      thisMonth: parseFloat(
+        thisMonthStats.find((s) => s.category === cat)?._sum.amount || 0
+      ),
+      lastMonth: parseFloat(
+        lastMonthStats.find((s) => s.category === cat)?._sum.amount || 0
+      ),
+    }));
 
-    res.json({
-      thisMonthTotal: thisTotal,
-      lastMonthTotal: lastTotal,
-      difference: difference,
-      percentageChange: percentageDiff,
-      currency: 'CAD',
-      message:
-        difference > 0
-          ? `Spend $${difference.toFixed(2)} more than last month .`
-          : `Spend $${Math.abs(difference).toFixed(2)} less than last month.`,
-    });
+    res.json(comparisonData);
   } catch (error) {
-    console.error('비교 통계 에러:', error);
-    res.status(500).json({ error: '데이터 비교 중 오류가 발생했습니다.' });
+    console.error('Comparison Error:', error);
+    res.status(500).json({ error: 'Data analysis error.' });
   }
 });
 
