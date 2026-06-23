@@ -11,16 +11,23 @@ import {
   Plus,
   X,
   Search,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 import AIChatBox from '../components/AIChatBot';
 import Sidebar from '../components/Sidebar';
+import useMonthNav from '../hooks/useMonthNav';
 
 const Transactions = () => {
   const [transactions, setTransactions] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewDate, setViewDate] = useState(new Date());
+  const { viewDate, handlePrevMonth, handleNextMonth, resetToToday } =
+    useMonthNav();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [userName, setUserName] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [formData, setFormData] = useState({
     amount: '',
@@ -34,6 +41,8 @@ const Transactions = () => {
   const location = useLocation();
 
   const fetchTransactions = async () => {
+    setLoading(true);
+    setError(null);
     try {
       const month = viewDate.getMonth() + 1;
       const year = viewDate.getFullYear();
@@ -47,6 +56,9 @@ const Transactions = () => {
       setUserName(userRes.data.name);
     } catch (err) {
       if (err.response?.status === 401) navigate('/login');
+      else setError('Failed to load transactions. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -71,32 +83,64 @@ const Transactions = () => {
     });
   }, [searchTerm, transactions, viewDate]);
 
+  const resetForm = () => {
+    setEditingId(null);
+    setFormData({
+      amount: '',
+      category: 'Restaurant',
+      type: 'EXPENSE',
+      date: new Date().toISOString().split('T')[0],
+      note: '',
+    });
+  };
+
+  const openAddModal = () => {
+    resetForm();
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    resetForm();
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/transactions', {
-        ...formData,
-        amount: parseFloat(formData.amount),
-      });
-      setIsModalOpen(false);
+      const payload = { ...formData, amount: parseFloat(formData.amount) };
+      if (editingId) {
+        await api.put(`/transactions/${editingId}`, payload);
+      } else {
+        await api.post('/transactions', payload);
+      }
+      closeModal();
       fetchTransactions();
-      setFormData({
-        amount: '',
-        category: 'Restaurant',
-        type: 'EXPENSE',
-        date: new Date().toISOString().split('T')[0],
-        note: '',
-      });
     } catch (err) {
-      console.error('Failed to add transaction', err);
+      console.error('Failed to save transaction', err);
     }
   };
 
-  const handlePrevMonth = () =>
-    setViewDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
-  const handleNextMonth = () =>
-    setViewDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
-  const resetToToday = () => setViewDate(new Date());
+  const handleEdit = (tx) => {
+    setEditingId(tx.id);
+    setFormData({
+      amount: String(tx.amount),
+      category: tx.category,
+      type: tx.type,
+      date: new Date(tx.date).toISOString().split('T')[0],
+      note: tx.note || '',
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this transaction?')) return;
+    try {
+      await api.delete(`/transactions/${id}`);
+      fetchTransactions();
+    } catch (err) {
+      console.error('Failed to delete transaction', err);
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-50 font-sans overflow-x-hidden text-black">
@@ -135,8 +179,8 @@ const Transactions = () => {
 
             <div className="flex flex-col items-end gap-4">
               <button
-                onClick={() => setIsModalOpen(true)}
-                className="bg-indigo-600 text-indigo-600 px-8 py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl hover:bg-indigo-700 transition-all active:scale-95 flex items-center gap-2"
+                onClick={openAddModal}
+                className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl hover:bg-indigo-700 transition-all active:scale-95 flex items-center gap-2"
               >
                 <Plus size={20} /> Add Transaction
               </button>
@@ -171,10 +215,29 @@ const Transactions = () => {
                     <th className="px-10 py-6 text-black">Date</th>
                     <th className="px-10 py-6 text-black">Details</th>
                     <th className="px-10 py-6 text-right text-black">Amount</th>
+                    <th className="px-10 py-6 text-right text-black">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50 bg-white">
-                  {filteredTransactions.length > 0 ? (
+                  {loading ? (
+                    <tr>
+                      <td
+                        colSpan="4"
+                        className="py-24 text-center text-gray-400 font-bold italic uppercase tracking-widest text-[11px]"
+                      >
+                        Loading transactions…
+                      </td>
+                    </tr>
+                  ) : error ? (
+                    <tr>
+                      <td
+                        colSpan="4"
+                        className="py-24 text-center text-rose-500 font-bold uppercase tracking-widest text-[11px]"
+                      >
+                        {error}
+                      </td>
+                    </tr>
+                  ) : filteredTransactions.length > 0 ? (
                     filteredTransactions.map((tx) => (
                       <tr
                         key={tx.id}
@@ -210,12 +273,30 @@ const Transactions = () => {
                             minimumFractionDigits: 2,
                           })}
                         </td>
+                        <td className="px-10 py-6 text-right">
+                          <div className="flex items-center justify-end gap-3">
+                            <button
+                              onClick={() => handleEdit(tx)}
+                              className="p-2 rounded-xl text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                              aria-label="Edit transaction"
+                            >
+                              <Pencil size={18} />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(tx.id)}
+                              className="p-2 rounded-xl text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
+                              aria-label="Delete transaction"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
                       <td
-                        colSpan="3"
+                        colSpan="4"
                         className="py-24 text-center text-gray-400 font-bold italic uppercase tracking-widest text-[11px]"
                       >
                         No transactions found for{' '}
@@ -236,10 +317,10 @@ const Transactions = () => {
           <div className="bg-white w-full max-w-md p-10 rounded-[40px] shadow-2xl border border-gray-100 animate-in zoom-in-95 duration-300">
             <div className="flex justify-between items-center mb-8">
               <h3 className="text-2xl font-black text-black uppercase tracking-tighter">
-                New Transaction
+                {editingId ? 'Edit Transaction' : 'New Transaction'}
               </h3>
               <button
-                onClick={() => setIsModalOpen(false)}
+                onClick={closeModal}
                 className="text-gray-400 hover:text-black"
               >
                 <X size={24} />
@@ -323,9 +404,9 @@ const Transactions = () => {
               </div>
               <button
                 type="submit"
-                className="w-full py-5 bg-indigo-600 text-indigo-600 rounded-[24px] font-black uppercase text-xs tracking-widest shadow-xl hover:bg-indigo-700 transition-all active:scale-95"
+                className="w-full py-5 bg-indigo-600 text-white rounded-[24px] font-black uppercase text-xs tracking-widest shadow-xl hover:bg-indigo-700 transition-all active:scale-95"
               >
-                Save Transaction
+                {editingId ? 'Update Transaction' : 'Save Transaction'}
               </button>
             </form>
           </div>

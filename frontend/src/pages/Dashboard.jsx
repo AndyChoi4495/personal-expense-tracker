@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import AIChatBox from '../components/AIChatBot';
 import Sidebar from '../components/Sidebar';
+import useMonthNav from '../hooks/useMonthNav';
 
 const renderActiveShape = (props) => {
   const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
@@ -50,19 +51,18 @@ const Dashboard = () => {
   const [transactions, setTransactions] = useState([]);
   const [comparisonData, setComparisonData] = useState([]);
   const [userName, setUserName] = useState('');
-  const [viewDate, setViewDate] = useState(new Date());
+  const { viewDate, handlePrevMonth, handleNextMonth, resetToToday } =
+    useMonthNav();
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
 
-  const handlePrevMonth = () =>
-    setViewDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
-  const handleNextMonth = () =>
-    setViewDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
-  const resetToToday = () => setViewDate(new Date());
-
   useEffect(() => {
     const fetchAllData = async () => {
+      setLoading(true);
+      setError(null);
       try {
         const month = viewDate.getMonth() + 1;
         const year = viewDate.getFullYear();
@@ -80,6 +80,9 @@ const Dashboard = () => {
         setUserName(userRes.data.name);
       } catch (err) {
         if (err.response?.status === 401) navigate('/login');
+        else setError('Failed to load dashboard data. Please try again.');
+      } finally {
+        setLoading(false);
       }
     };
     fetchAllData();
@@ -163,6 +166,17 @@ const Dashboard = () => {
               </div>
             </div>
           </header>
+
+          {loading && (
+            <div className="mb-8 text-center text-gray-400 font-bold italic uppercase tracking-widest text-[11px]">
+              Loading dashboard…
+            </div>
+          )}
+          {error && (
+            <div className="mb-8 p-5 rounded-2xl bg-rose-50 text-rose-600 font-bold text-center border border-rose-100">
+              {error}
+            </div>
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
             <section className="lg:col-span-2 bg-white p-10 rounded-[40px] shadow-xl border border-gray-50 h-[450px]">

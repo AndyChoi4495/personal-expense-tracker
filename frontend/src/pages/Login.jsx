@@ -71,7 +71,7 @@ const Login = () => {
             {/* Submit Button with Gradient Styling */}
             <button
               type="submit"
-              className="w-full flex items-center justify-center py-4 bg-indigo-600 hover:bg-indigo-700 text-black text-lg font-bold rounded-2xl shadow-lg transition-transform active:scale-95"
+              className="w-full flex items-center justify-center py-4 bg-indigo-600 hover:bg-indigo-700 text-white text-lg font-bold rounded-2xl shadow-lg transition-transform active:scale-95"
             >
               Sign In <ChevronRight className="ml-2 w-5 h-5" />
             </button>

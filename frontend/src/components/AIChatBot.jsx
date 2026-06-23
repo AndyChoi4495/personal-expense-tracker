@@ -170,11 +170,11 @@ const AIChatBox = () => {
               placeholder="Your question..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             />
             <button
               onClick={() => handleSend()}
-              className="bg-indigo-600 text-black p-3 rounded-xl hover:bg-indigo-700 transition-all shadow-md active:scale-90 flex items-center justify-center"
+              className="bg-indigo-600 text-white p-3 rounded-xl hover:bg-indigo-700 transition-all shadow-md active:scale-90 flex items-center justify-center"
             >
               <Send size={18} />
             </button>
@@ -189,7 +189,7 @@ const AIChatBox = () => {
             size={20}
             className="text-indigo-400 group-hover:rotate-12 transition-transform"
           />
-          <span className="font-bold uppercase text-[10px] tracking-[0.2em] text-indigo-700">
+          <span className="font-bold uppercase text-[10px] tracking-[0.2em] text-white">
             Ask AI Advisor
           </span>
         </button>

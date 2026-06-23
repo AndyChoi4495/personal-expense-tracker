@@ -3,6 +3,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Transactions from './pages/Transactions';
 import SignUp from './pages/SignUp';
+import RequireAuth from './components/RequireAuth';
 
 function App() {
   return (
@@ -10,8 +11,22 @@ function App() {
       <Routes>
         {/* 브라우저에서 /login을 입력하면 Login 컴포넌트가 뜹니다 */}
         <Route path="/login" element={<Login />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/transactions" element={<Transactions />} />
+        <Route
+          path="/dashboard"
+          element={
+            <RequireAuth>
+              <Dashboard />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/transactions"
+          element={
+            <RequireAuth>
+              <Transactions />
+            </RequireAuth>
+          }
+        />
         <Route path="/signUp" element={<SignUp />} />
 
         {/* 기본 경로(/)로 접속했을 때 자동으로 /login으로 보내줍니다 */}
