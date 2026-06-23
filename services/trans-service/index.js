@@ -8,8 +8,17 @@ const jwt = require('jsonwebtoken');
 const app = express();
 const PORT = 8002;
 
+// Fail fast on missing required env
+if (!process.env.JWT_SECRET) {
+  console.error('[Transaction Service] FATAL: JWT_SECRET is not set.');
+  process.exit(1);
+}
+if (!process.env.DATABASE_URL) {
+  console.error('[Transaction Service] FATAL: DATABASE_URL is not set.');
+  process.exit(1);
+}
+
 const cors = require('cors');
-app.use(cors());
 app.use(express.json());
 
 const allowedOrigins = [
@@ -96,41 +105,46 @@ app.get('/stats/summary', authenticateToken, async (req, res) => {
   const endOfMonth = new Date(targetYear, targetMonth + 1, 0, 23, 59, 59);
 
   try {
-    // Fetch ALL transactions for the month to calculate both types
-    const transactions = await prisma.transaction.findMany({
-      where: {
-        userId: userId,
-        date: { gte: startOfMonth, lte: endOfMonth },
-      },
+    const dateRange = { gte: startOfMonth, lte: endOfMonth };
+
+    // 수입/지출 합계를 DB에서 Decimal로 집계 (parseFloat 누적 오차 방지)
+    const totalsByType = await prisma.transaction.groupBy({
+      by: ['type'],
+      _sum: { amount: true },
+      where: { userId, date: dateRange },
     });
 
-    let totalExpense = 0;
-    let totalIncome = 0;
-    const categoryMap = {};
+    const sumFor = (t) => {
+      const row = totalsByType.find((r) => r.type === t);
+      return new Decimal(row?._sum.amount?.toString() ?? '0');
+    };
+    const totalExpenseDec = sumFor('EXPENSE');
+    const totalIncomeDec = sumFor('INCOME');
 
-    transactions.forEach((item) => {
-      const amount = parseFloat(item.amount);
-      if (item.type === 'EXPENSE') {
-        totalExpense += amount;
-        categoryMap[item.category] = (categoryMap[item.category] || 0) + amount;
-      } else if (item.type === 'INCOME') {
-        totalIncome += amount;
-      }
+    // 지출 카테고리별 합계
+    const byCategory = await prisma.transaction.groupBy({
+      by: ['category'],
+      _sum: { amount: true },
+      where: { userId, type: 'EXPENSE', date: dateRange },
     });
 
-    const categoryStats = Object.keys(categoryMap).map((cat) => ({
-      category: cat,
-      amount: categoryMap[cat],
-      percentage:
-        totalExpense > 0 ? ((categoryMap[cat] / totalExpense) * 100).toFixed(1) : 0,
-    }));
+    const breakdown = byCategory.map((row) => {
+      const amountDec = new Decimal(row._sum.amount?.toString() ?? '0');
+      return {
+        category: row.category,
+        amount: amountDec.toNumber(),
+        percentage: totalExpenseDec.gt(0)
+          ? amountDec.div(totalExpenseDec).mul(100).toFixed(1)
+          : 0,
+      };
+    });
 
     res.json({
       month: targetMonth + 1,
-      totalExpense,
-      totalIncome, // Added totalIncome to the response
+      totalExpense: totalExpenseDec.toNumber(),
+      totalIncome: totalIncomeDec.toNumber(),
       currency: 'CAD',
-      breakdown: categoryStats,
+      breakdown,
     });
   } catch (error) {
     res.status(500).json({ error: 'Calculation error' });
@@ -222,4 +236,51 @@ app.post('/', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Failture', detail: error.message });
   }
 });
+
+// [PUT] 거래 수정 (본인 소유 거래만)
+app.put('/:id', authenticateToken, async (req, res) => {
+  const userId = req.user.userId;
+  const id = parseInt(req.params.id);
+  const { amount, category, type, note, currency, date } = req.body;
+
+  try {
+    const existing = await prisma.transaction.findUnique({ where: { id } });
+    if (!existing || existing.userId !== userId) {
+      return res.status(404).json({ error: 'Transaction not found.' });
+    }
+
+    const updated = await prisma.transaction.update({
+      where: { id },
+      data: {
+        amount: amount !== undefined ? new Decimal(amount) : undefined,
+        currency,
+        category,
+        type,
+        note,
+        date: date ? new Date(date) : undefined,
+      },
+    });
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: 'Failure', detail: error.message });
+  }
+});
+
+// [DELETE] 거래 삭제 (본인 소유 거래만)
+app.delete('/:id', authenticateToken, async (req, res) => {
+  const userId = req.user.userId;
+  const id = parseInt(req.params.id);
+
+  try {
+    const existing = await prisma.transaction.findUnique({ where: { id } });
+    if (!existing || existing.userId !== userId) {
+      return res.status(404).json({ error: 'Transaction not found.' });
+    }
+    await prisma.transaction.delete({ where: { id } });
+    res.json({ message: 'Transaction deleted.' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failure', detail: error.message });
+  }
+});
+
 app.listen(PORT, () => console.log(`[Transaction Service] running on 8002`));

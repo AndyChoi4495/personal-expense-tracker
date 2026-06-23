@@ -30,7 +30,7 @@ app.use(
 
 const USER_SERVICE_URL = process.env.USER_SERVICE_URL || 'http://localhost:8001';
 const TRANS_SERVICE_URL = process.env.TRANS_SERVICE_URL || 'http://localhost:8002';
-const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8003;';
+const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8003';
 
 // 2. 유저 관련 요청 프록시
 app.use(

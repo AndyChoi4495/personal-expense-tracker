@@ -2,10 +2,22 @@ require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const app = express();
 const PORT = process.env.PORT || 8003;
+
+// Fail fast on missing required env
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('[AI Service] FATAL: JWT_SECRET is not set.');
+  process.exit(1);
+}
+if (!process.env.GEMINI_API_KEY) {
+  console.error('[AI Service] FATAL: GEMINI_API_KEY is not set.');
+  process.exit(1);
+}
 
 // Gemini SDK 초기화
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -14,12 +26,27 @@ const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
 app.use(cors());
 app.use(express.json());
+
+// [미들웨어] 토큰 확인 함수 — protects Gemini calls from anonymous abuse
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // "Bearer TOKEN"
+
+  if (!token) return res.status(401).json({ error: 'Access denied. No token provided.' });
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) return res.status(403).json({ error: 'Invalid or expired token.' });
+    req.user = user;
+    next();
+  });
+};
+
 // Base route
 app.get('/', (req, res) => {
   res.json({ message: 'Personal Financial Dashboard - AI Service running' });
 });
 
-app.post('/chat', async (req, res) => {
+app.post('/chat', authenticateToken, async (req, res) => {
   const { message } = req.body;
   const authHeader = req.headers.authorization;
 
@@ -29,9 +56,9 @@ app.post('/chat', async (req, res) => {
     const transUrl = process.env.TRANS_SERVICE_URL || 'http://localhost:8002';
 
     // 1. 가계부 데이터 가져오기
-
+    // trans-service mounts stats at /stats/summary (no /transactions prefix)
     const statsRes = await axios
-      .get(`${transUrl}/transactions/stats/summary`, {
+      .get(`${transUrl}/stats/summary`, {
         headers: { Authorization: authHeader },
       })
       .catch((err) => {

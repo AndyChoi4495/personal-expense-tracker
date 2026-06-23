@@ -1,5 +1,7 @@
 generator client {
   provider        = "prisma-client-js"
+  // 서비스 코드가 import 하는 경로로 클라이언트를 생성.
+  output          = "../src/generated/client"
   // Mac M1 및 배포 환경 호환성을 유지.
   binaryTargets   = ["native", "darwin-arm64", "debian-openssl-1.1.x"]
   // Prisma 7에서 어댑터 사용을 위해 활성화해야 합니다.
@@ -16,15 +18,4 @@ model User {
   password  String
   name      String
   createdAt DateTime @default(now())
-}
-
-model Transaction {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  amount    Decimal
-  currency  String   @default("CAD")
-  category  String
-  type      String
-  date      DateTime @default(now())
-  note      String?
 }

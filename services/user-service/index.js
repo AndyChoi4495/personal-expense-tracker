@@ -2,6 +2,7 @@
 require('dotenv').config();
 
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const { PrismaClient } = require('./src/generated/client');
 const { PrismaPg } = require('@prisma/adapter-pg');
 const { Pool } = require('pg');
@@ -9,14 +10,32 @@ const { Pool } = require('pg');
 const app = express();
 const PORT = 8001;
 
+// Fail fast on missing required env
+if (!process.env.JWT_SECRET) {
+  console.error('[User Service] FATAL: JWT_SECRET is not set.');
+  process.exit(1);
+}
+if (!process.env.DATABASE_URL) {
+  console.error('[User Service] FATAL: DATABASE_URL is not set.');
+  process.exit(1);
+}
+
 const cors = require('cors');
-app.use(cors());
 app.use(express.json());
 const allowedOrigins = [
   'https://personal-expense-tracker-front-end.vercel.app', // Production
   'http://localhost:5173', // Local Vite Dev Server
   'http://localhost:3000', // Alternative Local Port
 ];
+
+// Throttle credential endpoints to slow brute-force attempts
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many attempts. Please try again later.' },
+});
 
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -80,7 +99,7 @@ app.get('/username', authenticateToken, async (req, res) => {
 });
 
 // [POST] 회원가입: 실제 DB에 사용자 저장
-app.post('/signup', async (req, res) => {
+app.post('/signup', authLimiter, async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
@@ -116,20 +135,15 @@ app.post('/signup', async (req, res) => {
 });
 
 // [POST] 로그인 API
-app.post('/login', async (req, res) => {
+app.post('/login', authLimiter, async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // 1. 유저 존재 여부 확인
+    // Use a single generic error for both cases to avoid user enumeration
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) {
-      return res.status(404).json({ error: 'Does not exist.' });
-    }
-
-    // 2. 비밀번호 비교
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = user && (await bcrypt.compare(password, user.password));
     if (!isMatch) {
-      return res.status(401).json({ error: 'Wrong password.' });
+      return res.status(401).json({ error: 'Invalid email or password.' });
     }
 
     // 3. JWT 토큰 생성
