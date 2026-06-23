@@ -4,3 +4,8 @@ node_modules/
 .env.local
 dist/
 build/
+
+CLAUDE.md
+checklist.md
+context-notes.md
+UPGRADE_PLAN.md
