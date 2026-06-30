@@ -3,16 +3,14 @@
 require('dotenv').config();
 
 const express = require('express');
-const jwt = require('jsonwebtoken');
 
 const app = express();
 const PORT = 8002;
 
+// 인증을 제거했으므로 모든 거래는 이 고정 사용자 ID에 귀속됨 (DEFAULT_USER_ID 로 변경 가능)
+const DEFAULT_USER_ID = Number(process.env.DEFAULT_USER_ID) || 1;
+
 // Fail fast on missing required env
-if (!process.env.JWT_SECRET) {
-  console.error('[Transaction Service] FATAL: JWT_SECRET is not set.');
-  process.exit(1);
-}
 if (!process.env.DATABASE_URL) {
   console.error('[Transaction Service] FATAL: DATABASE_URL is not set.');
   process.exit(1);
@@ -46,8 +44,6 @@ app.use(
   })
 );
 
-const JWT_SECRET = process.env.JWT_SECRET;
-
 const { PrismaClient } = require('./src/generated/client');
 const { PrismaPg } = require('@prisma/adapter-pg');
 const { Pool } = require('pg');
@@ -57,23 +53,9 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
-// [미들웨어] 토큰 확인 함수
-const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // "Bearer TOKEN" 형식
-
-  if (!token) return res.status(401).json({ error: '로그인이 필요합니다.' });
-
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) return res.status(403).json({ error: '유효하지 않은 토큰입니다.' });
-    req.user = user; // 토큰에 담긴 userId를 추출해서 저장
-    next();
-  });
-};
-
-// [GET] 로그인한 사용자의 모든 거래 내역 조회
-app.get('/', authenticateToken, async (req, res) => {
-  const userId = req.user.userId; // 토큰에서 추출한 안전한 사용자 ID
+// [GET] 사용자의 모든 거래 내역 조회
+app.get('/', async (req, res) => {
+  const userId = DEFAULT_USER_ID;
 
   try {
     const transactions = await prisma.transaction.findMany({
@@ -93,8 +75,8 @@ app.get('/', authenticateToken, async (req, res) => {
 });
 
 // [GET] 이번 달 소비 통계 조회
-app.get('/stats/summary', authenticateToken, async (req, res) => {
-  const userId = req.user.userId;
+app.get('/stats/summary', async (req, res) => {
+  const userId = DEFAULT_USER_ID;
   const { month, year } = req.query;
 
   const now = new Date();
@@ -152,8 +134,8 @@ app.get('/stats/summary', authenticateToken, async (req, res) => {
 });
 
 // [GET] 카테고리별 전월 대비 비교
-app.get('/stats/category-comparison', authenticateToken, async (req, res) => {
-  const userId = req.user.userId;
+app.get('/stats/category-comparison', async (req, res) => {
+  const userId = DEFAULT_USER_ID;
   const { month, year } = req.query;
 
   const now = new Date();
@@ -214,9 +196,9 @@ app.get('/stats/category-comparison', authenticateToken, async (req, res) => {
 });
 
 // [POST] add transactions
-app.post('/', authenticateToken, async (req, res) => {
+app.post('/', async (req, res) => {
   const { amount, category, type, note, currency, date } = req.body;
-  const userId = req.user.userId;
+  const userId = DEFAULT_USER_ID;
 
   try {
     const newTransaction = await prisma.transaction.create({
@@ -238,8 +220,8 @@ app.post('/', authenticateToken, async (req, res) => {
 });
 
 // [PUT] 거래 수정 (본인 소유 거래만)
-app.put('/:id', authenticateToken, async (req, res) => {
-  const userId = req.user.userId;
+app.put('/:id', async (req, res) => {
+  const userId = DEFAULT_USER_ID;
   const id = parseInt(req.params.id);
   const { amount, category, type, note, currency, date } = req.body;
 
@@ -267,8 +249,8 @@ app.put('/:id', authenticateToken, async (req, res) => {
 });
 
 // [DELETE] 거래 삭제 (본인 소유 거래만)
-app.delete('/:id', authenticateToken, async (req, res) => {
-  const userId = req.user.userId;
+app.delete('/:id', async (req, res) => {
+  const userId = DEFAULT_USER_ID;
   const id = parseInt(req.params.id);
 
   try {

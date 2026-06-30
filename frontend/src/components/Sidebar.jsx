@@ -1,15 +1,10 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, ReceiptText, LogOut } from 'lucide-react';
+import { LayoutDashboard, ReceiptText } from 'lucide-react';
 
 const Sidebar = ({ userName }) => {
   const navigate = useNavigate();
   const location = useLocation();
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    navigate('/login');
-  };
 
   return (
     <aside className="w-80 bg-indigo-950 text-white flex flex-col p-6 shadow-2xl fixed h-full z-20">
@@ -57,15 +52,6 @@ const Sidebar = ({ userName }) => {
           <span className="uppercase tracking-tight">Transactions</span>
         </button>
       </nav>
-
-      {/* Logout Button */}
-      <button
-        onClick={handleLogout}
-        className="flex items-center space-x-3 p-4 text-red-600 font-bold hover:bg-red-600/10 rounded-2xl mt-auto transition-all active:scale-95"
-      >
-        <LogOut size={20} />
-        <span className="uppercase tracking-tight">Sign Out</span>
-      </button>
     </aside>
   );
 };

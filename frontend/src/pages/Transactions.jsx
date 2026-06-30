@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import api from '../api';
 import {
   LayoutDashboard,
@@ -37,7 +37,6 @@ const Transactions = () => {
     note: '',
   });
 
-  const navigate = useNavigate();
   const location = useLocation();
 
   const fetchTransactions = async () => {
@@ -55,8 +54,7 @@ const Transactions = () => {
       setTransactions(transRes.data.data || []);
       setUserName(userRes.data.name);
     } catch (err) {
-      if (err.response?.status === 401) navigate('/login');
-      else setError('Failed to load transactions. Please try again.');
+      setError('Failed to load transactions. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -64,7 +62,7 @@ const Transactions = () => {
 
   useEffect(() => {
     fetchTransactions();
-  }, [viewDate, navigate]);
+  }, [viewDate]);
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter((tx) => {

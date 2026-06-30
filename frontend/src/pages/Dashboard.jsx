@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import api from '../api';
 import {
   PieChart,
@@ -56,7 +56,6 @@ const Dashboard = () => {
   const [activeIndex, setActiveIndex] = useState(-1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
@@ -79,14 +78,13 @@ const Dashboard = () => {
         setComparisonData(compRes.data || []);
         setUserName(userRes.data.name);
       } catch (err) {
-        if (err.response?.status === 401) navigate('/login');
-        else setError('Failed to load dashboard data. Please try again.');
+        setError('Failed to load dashboard data. Please try again.');
       } finally {
         setLoading(false);
       }
     };
     fetchAllData();
-  }, [navigate, viewDate]);
+  }, [viewDate]);
 
   const COLORS = [
     '#4f46e5',
