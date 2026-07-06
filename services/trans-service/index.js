@@ -56,10 +56,22 @@ const prisma = new PrismaClient({ adapter });
 // [GET] 사용자의 모든 거래 내역 조회
 app.get('/', async (req, res) => {
   const userId = DEFAULT_USER_ID;
+  const { month, year } = req.query;
 
   try {
+    const where = { userId };
+
+    // month/year가 주어지면 해당 달로 필터 (/stats/summary와 동일한 로컬시간 범위 로직)
+    if (month && year) {
+      const targetMonth = parseInt(month) - 1;
+      const targetYear = parseInt(year);
+      const startOfMonth = new Date(targetYear, targetMonth, 1);
+      const endOfMonth = new Date(targetYear, targetMonth + 1, 0, 23, 59, 59);
+      where.date = { gte: startOfMonth, lte: endOfMonth };
+    }
+
     const transactions = await prisma.transaction.findMany({
-      where: { userId: userId },
+      where,
       orderBy: { date: 'desc' }, // Recent transaction on top
     });
 

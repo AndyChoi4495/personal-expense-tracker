@@ -61,14 +61,14 @@ const AIChatBox = () => {
   };
 
   return (
-    <div className="fixed bottom-8 right-8 z-[9999]">
+    <div className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 z-[9999]">
       {isOpen ? (
-        <div className="w-80 sm:w-96 bg-white rounded-[32px] shadow-2xl border border-gray-100 flex flex-col overflow-hidden animate-in fade-in zoom-in duration-300">
+        <div className="w-[calc(100vw-2rem)] max-w-sm sm:w-96 bg-white rounded-3xl shadow-2xl border border-gray-100 flex flex-col overflow-hidden animate-in fade-in zoom-in duration-300">
           {/* Header */}
-          <div className="bg-gray-100 p-6 flex justify-between items-center border-b border-gray-200">
+          <div className="bg-gray-100 p-5 flex justify-between items-center border-b border-gray-200">
             <div className="flex items-center gap-2">
               <Sparkles size={18} className="text-indigo-600" />
-              <span className="font-black tracking-tighter uppercase text-sm text-indigo-700">
+              <span className="font-semibold tracking-tight uppercase text-sm text-indigo-700">
                 AI Financial Advisor
               </span>
             </div>
@@ -183,13 +183,13 @@ const AIChatBox = () => {
       ) : (
         <button
           onClick={() => setIsOpen(true)}
-          className="bg-indigo-950 text-white px-6 py-4 rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-all border border-indigo-800 flex items-center gap-3 group"
+          className="bg-indigo-950 text-white px-5 py-3.5 rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-all border border-indigo-800 flex items-center gap-2.5 group"
         >
           <Sparkles
             size={20}
             className="text-indigo-400 group-hover:rotate-12 transition-transform"
           />
-          <span className="font-bold uppercase text-[10px] tracking-[0.2em] text-white">
+          <span className="font-semibold uppercase text-xs tracking-wide text-white">
             Ask AI Advisor
           </span>
         </button>
