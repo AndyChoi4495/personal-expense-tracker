@@ -61,12 +61,12 @@ app.get('/', async (req, res) => {
   try {
     const where = { userId };
 
-    // month/year가 주어지면 해당 달로 필터 (/stats/summary와 동일한 로컬시간 범위 로직)
+    // month/year가 주어지면 해당 달로 필터 (/stats/summary와 동일한 UTC 범위 로직)
     if (month && year) {
       const targetMonth = parseInt(month) - 1;
       const targetYear = parseInt(year);
-      const startOfMonth = new Date(targetYear, targetMonth, 1);
-      const endOfMonth = new Date(targetYear, targetMonth + 1, 0, 23, 59, 59);
+      const startOfMonth = new Date(Date.UTC(targetYear, targetMonth, 1));
+      const endOfMonth = new Date(Date.UTC(targetYear, targetMonth + 1, 0, 23, 59, 59, 999));
       where.date = { gte: startOfMonth, lte: endOfMonth };
     }
 
@@ -95,8 +95,8 @@ app.get('/stats/summary', async (req, res) => {
   const targetMonth = month ? parseInt(month) - 1 : now.getMonth();
   const targetYear = year ? parseInt(year) : now.getFullYear();
 
-  const startOfMonth = new Date(targetYear, targetMonth, 1);
-  const endOfMonth = new Date(targetYear, targetMonth + 1, 0, 23, 59, 59);
+  const startOfMonth = new Date(Date.UTC(targetYear, targetMonth, 1));
+  const endOfMonth = new Date(Date.UTC(targetYear, targetMonth + 1, 0, 23, 59, 59, 999));
 
   try {
     const dateRange = { gte: startOfMonth, lte: endOfMonth };
@@ -155,13 +155,13 @@ app.get('/stats/category-comparison', async (req, res) => {
   const targetYear = year ? parseInt(year) : now.getFullYear();
 
   // 1. 기준 달(Target Month) 범위 계산
-  const startOfThisMonth = new Date(targetYear, targetMonth, 1);
-  const endOfThisMonth = new Date(targetYear, targetMonth + 1, 0, 23, 59, 59);
+  const startOfThisMonth = new Date(Date.UTC(targetYear, targetMonth, 1));
+  const endOfThisMonth = new Date(Date.UTC(targetYear, targetMonth + 1, 0, 23, 59, 59, 999));
 
   // 2. 이전 달(Previous Month) 범위 계산
   // (Date 객체가 자동으로 연도 바뀜을 처리해줌: 1월에서 -1하면 전년도 12월이 됨)
-  const startOfLastMonth = new Date(targetYear, targetMonth - 1, 1);
-  const endOfLastMonth = new Date(targetYear, targetMonth, 0, 23, 59, 59);
+  const startOfLastMonth = new Date(Date.UTC(targetYear, targetMonth - 1, 1));
+  const endOfLastMonth = new Date(Date.UTC(targetYear, targetMonth, 0, 23, 59, 59, 999));
 
   try {
     // 이번 달(선택된 달) 카테고리별 합계
