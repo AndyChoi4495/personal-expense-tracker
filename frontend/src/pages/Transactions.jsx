@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import Layout from '../components/Layout';
 import useMonthNav from '../hooks/useMonthNav';
+import { todayLocalISO, toDateInputValue, formatTxDate } from '../utils/date';
 
 const Transactions = () => {
   const [transactions, setTransactions] = useState([]);
@@ -28,7 +29,7 @@ const Transactions = () => {
     amount: '',
     category: 'Restaurant',
     type: 'EXPENSE',
-    date: new Date().toISOString().split('T')[0],
+    date: todayLocalISO(),
     note: '',
   });
 
@@ -63,8 +64,8 @@ const Transactions = () => {
       const searchStr = searchTerm.toLowerCase();
 
       const isSameMonth =
-        txDate.getMonth() === viewDate.getMonth() &&
-        txDate.getFullYear() === viewDate.getFullYear();
+        txDate.getUTCMonth() === viewDate.getMonth() &&
+        txDate.getUTCFullYear() === viewDate.getFullYear();
 
       const matchesSearch =
         tx.category.toLowerCase().includes(searchStr) ||
@@ -80,7 +81,7 @@ const Transactions = () => {
       amount: '',
       category: 'Restaurant',
       type: 'EXPENSE',
-      date: new Date().toISOString().split('T')[0],
+      date: todayLocalISO(),
       note: '',
     });
   };
@@ -117,7 +118,7 @@ const Transactions = () => {
       amount: String(tx.amount),
       category: tx.category,
       type: tx.type,
-      date: new Date(tx.date).toISOString().split('T')[0],
+      date: toDateInputValue(tx.date),
       note: tx.note || '',
     });
     setIsModalOpen(true);
@@ -231,10 +232,11 @@ const Transactions = () => {
                     className="hover:bg-indigo-50/30 transition-all group"
                   >
                     <td className="px-5 sm:px-8 py-5 text-gray-900 font-medium whitespace-nowrap">
-                      {new Date(tx.date).toLocaleDateString('en-US', {
-                        day: 'numeric',
-                        month: 'short',
-                      })}
+                      {formatTxDate(
+                        tx.date,
+                        { day: 'numeric', month: 'short' },
+                        'en-US',
+                      )}
                     </td>
                     <td className="px-5 sm:px-8 py-5">
                       <div className="flex items-center gap-3">

@@ -17,6 +17,7 @@ import {
 import { Wallet, ChevronLeft, ChevronRight, BarChart3 } from 'lucide-react';
 import Layout from '../components/Layout';
 import useMonthNav from '../hooks/useMonthNav';
+import { formatTxDate } from '../utils/date';
 
 const renderActiveShape = (props) => {
   const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
@@ -219,7 +220,7 @@ const Dashboard = () => {
                     {tx.category}
                   </p>
                   <p className="text-xs text-gray-400">
-                    {new Date(tx.date).toLocaleDateString()}
+                    {formatTxDate(tx.date)}
                   </p>
                 </div>
                 <p
