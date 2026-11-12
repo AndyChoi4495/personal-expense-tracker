@@ -53,6 +53,18 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
+// [GET] DB keep-alive / health check
+// Vercel Cron이 매일 호출 → Supabase 무료 플랜의 비활성 자동 일시정지 방지
+app.get('/health', async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ status: 'ok', db: 'up', time: new Date().toISOString() });
+  } catch (error) {
+    console.error('[Health] DB check failed:', error);
+    res.status(503).json({ status: 'error', db: 'down' });
+  }
+});
+
 // [GET] 사용자의 모든 거래 내역 조회
 app.get('/', async (req, res) => {
   const userId = DEFAULT_USER_ID;
