@@ -11,5 +11,11 @@
       "source": "/(.*)",
       "destination": "/index.js"
     }
+  ],
+  "crons": [
+    {
+      "path": "/health",
+      "schedule": "0 12 * * *"
+    }
   ]
 }
